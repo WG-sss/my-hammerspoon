@@ -585,11 +585,11 @@ hs.hotkey.bind(windows.center.prefix, windows.center.key, windows.center.message
     local screen = win:screen()
     local max = screen:frame()
     local size = max.w / 2
-    
-    f.x = max.x + (max.w / 4)
-    f.y = max.y + (max.h / 4)
-    f.w = max.w / 2
-    f.h = max.h / 2
+
+    f.x = max.x + (max.w / 5) - 40
+    f.y = max.y + (max.h / 5) - 40
+    f.w = 2 * max.w / 3 - 120
+    f.h = 2 * max.h / 3 + 100
     win:setFrame(f)
 
     --如果应用窗口有最小限制,则根据最小窗口居中
@@ -643,6 +643,12 @@ end)
 hs.hotkey.bind(windows.max.prefix, windows.max.key, windows.max.message, function()
     local win = hs.window.focusedWindow()
     win:maximize()
+end)
+
+-- minimize
+hs.hotkey.bind(windows.min.prefix, windows.min.key, windows.min.message, function()
+    local win = hs.window.focusedWindow()
+    win:minimize()
 end)
 
 -- 将窗口移动到上方屏幕
