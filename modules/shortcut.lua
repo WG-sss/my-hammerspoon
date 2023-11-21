@@ -98,10 +98,11 @@ applications = {
     {prefix = {"Option"}, key = "Z", message="Zotero", bundleId="org.zotero.zotero"},
     {prefix = {"Option"}, key = "K", message="Keynote", bundleId="com.apple.iWork.Keynote"},
     {prefix = {"Option"}, key = "U", message="Anki", bundleId="net.ankiweb.dtop"},
+    {prefix = {"Option"}, key = "R", message="Reminder", bundleId="com.apple.Reminder"},
+    {prefix = {"Option"}, key = "C", message="Chrome", bundleId="com.google.Chrome"},
 
     -- seldom use
     -- {prefix = {"Option"}, key = "V", message="VSCode", bundleId="com.microsoft.VSCode"},
-    {prefix = {"Option"}, key = "C", message="Chrome", bundleId="com.google.Chrome"},
     {prefix = {"Option"}, key = "Y", message="PyCharm", bundleId="com.jetbrains.pycharm"},
 
     -- don't use at present
@@ -113,30 +114,6 @@ applications = {
     -- {prefix = {"Option"}, key = "O", message="Oulu dictinary", bundleId="com.eusoft.freeeudi"},
     -- {prefix = {"Option"}, key = "Q", message="QQ", bundleId="com.tencent.qq"},
     -- {prefix = {"Option"}, key = "R", message="Redis Desktop", bundleId="me.qii404.another-redis-desktop-manager"}
-}
-
--- 输入法切换快捷键配置
--- input_methods = {
---     abc = {prefix = {"Option"}, key = "J", message="ABC"},
---     chinese = {prefix = {"Option"}, key = "K", message="简体拼音"}, 
---     japanese = {prefix = {"Option"}, key = "L", message="Hiragana"}
--- }
-
--- 表情包搜索快捷键配置
-emoji_search = {
-    prefix = {
-        "Option"
-    },
-    key = "E"
-}
-
--- 密码粘贴快捷键配置
-password_paste = {
-    prefix = {
-        "Ctrl", "Command"
-    },
-    key = "V", 
-    message = "Password Paste"
 }
 
 -- 查看剪贴板

@@ -29,7 +29,6 @@ canvas:appendElements({
 })
 
 function formatText()
-    
     -- 加载所有绑定的快捷键
     local hotkeys = hs.hotkey.getHotkeys()
     local renderText = {}
@@ -40,9 +39,6 @@ function formatText()
     -- 窗口管理类
     local windowManagement = {}
     table.insert(windowManagement, {msg = '[Window Management:]'})
-    -- 密码粘贴类
-    local passwordPaste = {}
-    table.insert(passwordPaste, {msg = '[Password Paste:]'})
 
     -- 每行最多 40 个字符
     local MAX_LEN = 40
@@ -57,10 +53,6 @@ function formatText()
         if string.find(v.idx, '^⌃⌥') ~= nil or string.find(v.idx, '^⌘⌃⌥') ~= nil then
             table.insert(windowManagement, {msg = v.msg})
         end
-        -- 以 ⌘⌃ 开头，表示为密码粘贴快捷键
-        if v.idx == '⌘⌃V' then
-            table.insert(passwordPaste, {msg = v.msg})
-        end
     end
 
     hotkeys = {}
@@ -68,9 +60,6 @@ function formatText()
         table.insert(hotkeys, {msg = v.msg})
     end
     for k, v in ipairs(windowManagement) do
-        table.insert(hotkeys, {msg = v.msg})
-    end
-    for k, v in ipairs(passwordPaste) do
         table.insert(hotkeys, {msg = v.msg})
     end
 
