@@ -90,7 +90,7 @@ applications = {
     {prefix = {"Option"}, key = "S", message="Safari", bundleId="com.apple.Safari"},
     {prefix = {"Option"}, key = "F", message="Finder", bundleId="com.apple.finder"},
     {prefix = {"Option"}, key = "M", message="MailMaster", bundleId="com.netease.macmail"},
-    {prefix = {"Option"}, key = "T", message="iTerm2", bundleId="com.googlecode.iterm2"},
+    {prefix = {"Option"}, key = "T", message="Wezterm", bundleId="com.github.wez.wezterm"},
     {prefix = {"Option"}, key = "P", message="System Setting", bundleId="com.apple.systempreferences"},
     {prefix = {"Option"}, key = "B", message="Obsidian", bundleId="md.obsidian"},
     {prefix = {"Option"}, key = "I", message="Firefox", bundleId="org.mozilla.firefox"},
@@ -100,6 +100,7 @@ applications = {
     {prefix = {"Option"}, key = "U", message="Anki", bundleId="net.ankiweb.dtop"},
     {prefix = {"Option"}, key = "R", message="Reminder", bundleId="com.apple.Reminder"},
     {prefix = {"Option"}, key = "C", message="Chrome", bundleId="com.google.Chrome"},
+    {prefix = {"Option"}, key = "D", message="DiDa", bundleId="com.TickTick.task.mac"},
 
     -- seldom use
     -- {prefix = {"Option"}, key = "V", message="VSCode", bundleId="com.microsoft.VSCode"},
