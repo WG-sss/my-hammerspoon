@@ -103,6 +103,7 @@ windows = {
 applications = {
     { prefix = { "Option" }, key = "W", message = "WeChat", bundleId = "com.tencent.xinWeChat" },
     { prefix = { "Option" }, key = "F", message = "Finder", bundleId = "com.apple.finder" },
+    { prefix = { "Option" }, key = "M", message = "Thunderbird", bundleId = "org.mozilla.thunderbird" },
     { prefix = { "Option" }, key = "T", message = "Wezterm", bundleId = "com.github.wez.wezterm" },
     { prefix = { "Option" }, key = "P", message = "System Setting", bundleId = "com.apple.systempreferences" },
     { prefix = { "Option" }, key = "B", message = "Obsidian", bundleId = "md.obsidian" },
@@ -111,17 +112,21 @@ applications = {
     { prefix = { "Option" }, key = "Z", message = "Zotero", bundleId = "org.zotero.zotero" },
     { prefix = { "Option" }, key = "K", message = "Anki", bundleId = "net.ankiweb.dtop" },
     { prefix = { "Option" }, key = "D", message = "DiDa", bundleId = "com.TickTick.task.mac" },
+    { prefix = { "Option" }, key = "R", message = "Reminder", bundleId = "com.apple.Reminder" },
+    { prefix = { "Option" }, key = "D", message = "DiDa", bundleId = "com.TickTick.task.mac" },
+    { prefix = { "Option" }, key = "E", message = "Excel", bundleId = "com.microsoft.excel" },
 
     -- seldom use
-    -- {prefix = {"Option"}, key = "M", message="MailMaster", bundleId="com.netease.macmail"},
     -- {prefix = {"Option"}, key = "V", message="VSCode", bundleId="com.microsoft.VSCode"},
     -- {prefix = {"Option"}, key = "Y", message="PyCharm", bundleId="com.jetbrains.pycharm"},
     -- {prefix = {"Option"}, key = "S", message="Safari", bundleId="com.apple.Safari"},
     -- {prefix = {"Option"}, key = "K", message="Keynote", bundleId="com.apple.iWork.Keynote"},
     -- {prefix = {"Option"}, key = "R", message="Reminder", bundleId="com.apple.Reminder"},
     -- {prefix = {"Option"}, key = "C", message="Chrome", bundleId="com.google.Chrome"},
+    { prefix = { "Option" }, key = "C", message = "Chrome", bundleId = "com.google.Chrome" },
 
     -- don't use at present
+    -- { prefix = { "Option" }, key = "K", message = "Keynote", bundleId = "com.apple.iWork.Keynote" },
     -- {prefix = {"Option"}, key = "I", message="IntelliJ IDEA", bundleId="com.jetbrains.intellij"},
     -- {prefix = {"Option"}, key = "N", message="WizNote", bundleId="cn.wiznote.desktop"},
     -- {prefix = {"Option"}, key = "D", message="DataGrip", bundleId="com.jetbrains.datagrip"},
