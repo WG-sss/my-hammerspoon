@@ -30,6 +30,11 @@ defaultConfig = {
         name = "快捷键列表查看",
         enable = true,
     },
+    {
+        module = "modules.clipboard",
+        name = "剪切板历史",
+        enable = true,
+    },
 }
 
 base_path = os.getenv("HOME") .. "/.hammerspoon/"
