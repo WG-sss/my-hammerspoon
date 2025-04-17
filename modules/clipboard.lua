@@ -2,13 +2,13 @@
 -- it's better placing those copied content in file in following update.
 -- 剪贴板历史管理器配置
 local config = {
-    max_entries = 50, -- 最大保存的剪贴板条目数
-    paste_on_select = true, -- 选择后是否自动粘贴
+    maxEntries = 50, -- 最大保存的剪贴板条目数
+    pasteOnSelect = true, -- 选择后是否自动粘贴
     hotkey = { { "cmd", "shift" }, "v" }, -- 激活快捷键
-    clipboard_check_interval = 0.5, -- 检查剪贴板的间隔（秒）
-    excluded_apps = { "1Password" }, -- 排除监听这些应用的复制操作
-    play_sound = true, -- 是否在复制时播放声音
-    sound_name = "Tink", -- 声音名称: Tink, Bottle, Pop, Purr, Sosumi, Submarine, Basso, Frog, Funk, Glass, Hero
+    clipboardCheckInterval = 0.5, -- 检查剪贴板的间隔（秒）
+    excludedApps = { "1Password" }, -- 排除监听这些应用的复制操作
+    playSound = true, -- 是否在复制时播放声音
+    soundName = "Tink", -- 声音名称: Tink, Bottle, Pop, Purr, Sosumi, Submarine, Basso, Frog, Funk, Glass, Hero
     savePath = "./clipboard_history.json",
 }
 
@@ -22,8 +22,7 @@ local clipboard_history = (function()
         return {}
     end
 end)()
-
-local last_change = hs.pasteboard.changeCount()
+local lastChange = hs.pasteboard.changeCount()
 local chooser = nil
 local pasteboard = hs.pasteboard
 
@@ -35,7 +34,7 @@ local function isExcludedApp()
     end
 
     local appName = currentApp:name()
-    for _, excludedApp in ipairs(config.excluded_apps) do
+    for _, excludedApp in ipairs(config.excludedApps) do
         if appName == excludedApp then
             return true
         end
@@ -45,8 +44,8 @@ end
 
 -- 播放提示音
 local function playNotificationSound()
-    if config.play_sound then
-        hs.sound.getByName(config.sound_name):play()
+    if config.playSound then
+        hs.sound.getByName(config.soundName):play()
     end
 end
 
@@ -120,7 +119,7 @@ local function areItemsSimilar(item1, item2)
         end
     -- 如果是图片
     elseif item1.type == "image" and item2.type == "image" then
-        --BUG: images cann't be compare
+        --BUG: images cann't be compared
         return (item1.image:toASCII() == item2.image:toASCII())
         -- 对于文本内容，比较纯文本部分
         -- 检查两个剪贴板项目是否相似
@@ -131,10 +130,10 @@ local function areItemsSimilar(item1, item2)
 end
 
 -- 监控剪贴板变化
-local clipboard_timer = hs.timer.new(config.clipboard_check_interval, function()
+local clipboardTimer = hs.timer.new(config.clipboardCheckInterval, function()
     local now = pasteboard.changeCount()
-    if now > last_change then
-        last_change = now
+    if now > lastChange then
+        lastChange = now
 
         -- 如果当前应用在排除列表中，跳过
         if isExcludedApp() then
@@ -147,9 +146,9 @@ local clipboard_timer = hs.timer.new(config.clipboard_check_interval, function()
         -- 只有当有内容时才继续
         if item.availableTypes ~= {} then
             -- 检查是否已经存在相似内容
-            for i, historyItem in ipairs(clipboard_history) do
+            for i, historyItem in ipairs(clipboardHistory) do
                 if areItemsSimilar(item, historyItem) then
-                    table.remove(clipboard_history, i)
+                    table.remove(clipboardHistory, i)
                     break
                 end
             end
@@ -157,11 +156,11 @@ local clipboard_timer = hs.timer.new(config.clipboard_check_interval, function()
             playNotificationSound()
 
             -- 添加到历史开头
-            table.insert(clipboard_history, 1, item)
+            table.insert(clipboardHistory, 1, item)
 
             -- 如果超出最大限制，删除最旧的
-            if #clipboard_history > config.max_entries then
-                table.remove(clipboard_history)
+            if #clipboardHistory > config.maxEntries then
+                table.remove(clipboardHistory)
             end
 
             -- TODD:
@@ -184,7 +183,7 @@ end)
 -- 还原剪贴板项目
 local function setItemTo(item)
     -- 暂时禁用剪贴板监控，避免循环
-    clipboard_timer:stop()
+    clipboardTimer:stop()
 
     -- 根据类型恢复剪贴板内容
     if item.type == "file" and item.fileURLs then
@@ -200,11 +199,11 @@ local function setItemTo(item)
     end
 
     -- 更新changeCount避免循环触发
-    last_change = pasteboard.changeCount()
+    lastChange = pasteboard.changeCount()
 
     -- 重新启动剪贴板监控
     hs.timer.doAfter(0.5, function()
-        clipboard_timer:start()
+        clipboardTimer:start()
     end)
 end
 
@@ -216,7 +215,7 @@ local function createChooser()
         end
 
         -- 获取选择的剪贴板内容
-        local selectedItem = clipboard_history[selection.index]
+        local selectedItem = clipboardHistory[selection.index]
 
         -- 恢复到剪贴板
         setItemTo(selectedItem)
@@ -246,7 +245,7 @@ local function showChooser()
 
     -- 准备显示项
     local choices = {}
-    for i, item in ipairs(clipboard_history) do
+    for i, item in ipairs(clipboardHistory) do
         if item.type == "file" then
             local path = item.fileURLs["filePath"]
             icon = hs.image.iconForFile(path)
@@ -285,4 +284,4 @@ end
 hs.hotkey.bind(config.hotkey[1], config.hotkey[2], showChooser)
 
 -- 开始监控剪贴板
-clipboard_timer:start()
+clipboardTimer:start()
