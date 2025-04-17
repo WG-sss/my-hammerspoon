@@ -1,158 +1,261 @@
+-- TODO: The current saving method is placing content in memeory which is most expensive for system,
+-- it's better placing those copied content in file in following update.
+-- 剪贴板历史管理器配置
 local config = {
-    max_entries = 50,
-    max_display = 10,
-    historyFile = os.getenv("HOME") .. "/.hammerspoon/clipboard_history.json",
-    clipboardHistory = {},
-    paste_on_select = true,
-    hotkey = { { "cmd", "shift" }, "v" },
-    clipboard_check_interval = 0.5,
-    excluded_apps = { "1Password" },
-    play_sound = true,
-    sound_name = "Tink",
+    max_entries = 50, -- 最大保存的剪贴板条目数
+    paste_on_select = true, -- 选择后是否自动粘贴
+    hotkey = { { "cmd", "shift" }, "v" }, -- 激活快捷键
+    clipboard_check_interval = 0.5, -- 检查剪贴板的间隔（秒）
+    excluded_apps = { "1Password" }, -- 排除监听这些应用的复制操作
+    play_sound = true, -- 是否在复制时播放声音
+    sound_name = "Tink", -- 声音名称: Tink, Bottle, Pop, Purr, Sosumi, Submarine, Basso, Frog, Funk, Glass, Hero
 }
 
--- 加载历史记录
-local function loadHistory()
-    local file = io.open(config.historyFile, "r")
-    if file then
-        local content = file:read("*a")
-        file:close()
-        local data = hs.json.decode(content)
-        if data then
-            config.clipboardHistory = data
+-- 初始化剪贴板历史
+local clipboard_history = {}
+local last_change = hs.pasteboard.changeCount()
+local chooser = nil
+local pasteboard = hs.pasteboard
+
+-- 检查当前应用是否在排除列表中
+local function isExcludedApp()
+    local currentApp = hs.application.frontmostApplication()
+    if not currentApp then
+        return false
+    end
+
+    local appName = currentApp:name()
+    for _, excludedApp in ipairs(config.excluded_apps) do
+        if appName == excludedApp then
+            return true
         end
     end
+    return false
 end
 
--- 保存历史记录
-local function saveHistory()
-    local file = io.open(config.historyFile, "w")
-    if file then
-        file:write(hs.json.encode(config.clipboardHistory))
-        file:close()
+-- 播放提示音
+local function playNotificationSound()
+    if config.play_sound then
+        hs.sound.getByName(config.sound_name):play()
     end
 end
 
-loadHistory()
+-- 获取剪贴板内容并保存为通用格式
+local function saveClipboardContent()
+    local item = {
+        plainText = pasteboard.getContents(),
+        styledText = pasteboard.readStyledText(),
+        image = pasteboard.readImage(), -- return image or nil
+        fileURLs = pasteboard.readURL(),
+        availableTypes = pasteboard.typesAvailable(), -- 检查可用的UTI类型
+        type = nil,
+        timestamp = os.time(),
+    }
 
--- 监听剪贴板变化
-local lastChange = hs.pasteboard.changeCount()
-hs.timer.doEvery(config.clipboard_check_interval, function()
-    local change = hs.pasteboard.changeCount()
-    if change == lastChange then
-        return
-    end
-    lastChange = change
-
-    local content = hs.pasteboard.getContents()
-    local image = hs.pasteboard.readImage()
-
-    if not content and not image then
-        return
-    end
-
-    local item = {}
-    if image then
+    -- 确定剪贴板内容类型
+    if item.availableTypes["URL"] then
+        item.type = "file"
+    elseif item.availableTypes["image"] and item.availableTypes["string"] == nil then
         item.type = "image"
-        item.content = image
-        item.preview = "[Image]"
-    elseif content then
-        item.type = "text"
-        item.content = content
-        item.preview = content:sub(1, 30) .. (#content > 30 and "..." or "")
+    elseif item.availableTypes["styledText"] then
+        item.type = "styledText"
+    elseif item.availableTypes["string"] then -- it seems never be reached
+        item.type = "plaintext"
     else
-        return
+        item.type = "unknown"
     end
 
-    local latest = config.clipboardHistory[1]
-    if not latest or latest.content ~= item.content then
-        table.insert(config.clipboardHistory, 1, item)
-        if #config.clipboardHistory > config.max_entries then
-            table.remove(config.clipboardHistory)
+    return item
+end
+
+-- 获取展示文本
+local function getDisplayText(item)
+    if item.type == "file" then
+        local path = item.fileURLs["filePath"]
+        return hs.fs.displayName(path)
+        -- TODO:fix the bug of only can get one file item
+        -- if #item.fileURLs == 1 then
+        --     local path = item.fileURLs["filePath"]
+        --     return "📄 " .. hs.fs.displayName(path)
+        -- else
+        --     return "📄 " .. #item.fileURLs .. " 个文件"
+        -- end
+    elseif item.type == "image" then
+        return "图片"
+    elseif item.type == "styledText" then
+        local plainText = item.plainText or ""
+        if #plainText > 50 then
+            -- TODO:change the length for better looking
+            plainText = plainText:gsub("^%s*(.-)", "%1") .. "..."
+            plainText = string.sub(plainText, 1, 20) .. "..."
         end
-        saveHistory()
-        if config.play_sound then
-            hs.sound.getByName(config.sound_name):play()
+        return plainText:gsub("\n", " ↩ ")
+    elseif item.type == "plainText" then
+        local plainText = item.plainText or ""
+        if #plainText > 50 then
+            plainText = plainText:gsub("^%s*(.-)", "%1") .. "..."
+            plainText = string.sub(plainText, 1, 20) .. "..."
+        end
+        return plainText:gsub("\n", " ↩ ")
+    else
+        return "❓ 未知内容"
+    end
+end
+-- 检查两个剪贴板项目是否相似
+local function areItemsSimilar(item1, item2)
+    -- 如果是文件，比较路径
+    if item1.type == "file" and item2.type == "file" then
+        if item1.fileURLs["filePath"] == item2.fileURLs["filePath"] then
+            return true
+        end
+    -- 如果是图片
+    elseif item1.type == "image" and item2.type == "image" then
+        --BUG: images cann't be compare
+        return (item1.image:toASCII() == item2.image:toASCII())
+        -- 对于文本内容，比较纯文本部分
+        -- 检查两个剪贴板项目是否相似
+    elseif item1.plainText == item2.plainText then
+        return true
+    end
+    return false
+end
+
+-- 监控剪贴板变化
+local clipboard_timer = hs.timer.new(config.clipboard_check_interval, function()
+    local now = pasteboard.changeCount()
+    if now > last_change then
+        last_change = now
+
+        -- 如果当前应用在排除列表中，跳过
+        if isExcludedApp() then
+            return
+        end
+        -- 保存剪贴板内容
+        local item = saveClipboardContent()
+        item.applicationIDFrom = hs.application.frontmostApplication():bundleID()
+
+        -- 只有当有内容时才继续
+        if item.availableTypes ~= {} then
+            -- 检查是否已经存在相似内容
+            for i, historyItem in ipairs(clipboard_history) do
+                if areItemsSimilar(item, historyItem) then
+                    table.remove(clipboard_history, i)
+                    break
+                end
+            end
+
+            -- 添加到历史开头
+            table.insert(clipboard_history, 1, item)
+
+            -- 如果超出最大限制，删除最旧的
+            if #clipboard_history > config.max_entries then
+                table.remove(clipboard_history)
+            end
+
+            -- 播放提示音
+            playNotificationSound()
         end
     end
 end)
+-- 还原剪贴板项目
+local function restoreClipboardItem(item)
+    -- 暂时禁用剪贴板监控，避免循环
+    clipboard_timer:stop()
 
-local function escapeHTML(str)
-    if not str then
-        return ""
-    end
-    str = str:gsub("%%", "%%%%") -- 先转义百分号
-    str = str:gsub("&", "&amp;")
-    str = str:gsub("<", "&lt;")
-    str = str:gsub(">", "&gt;")
-    str = str:gsub('"', "&quot;")
-    str = str:gsub("'", "&#39;")
-    return str
-end
-
--- UI 展示
-local function showClipboardHistory()
-    local webview = hs.webview
-        .new({ x = 200, y = 200, w = 600, h = 500 })
-        :windowStyle(hs.webview.windowMasks.titled + hs.webview.windowMasks.closable)
-
-    -- 动态构建 HTML
-    local html = [[
-    <html><head><style>
-    body { font-family: -apple-system; padding: 10px; background: #f9f9f9; }
-    .item { padding: 10px; margin: 10px 0; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; }
-    .item:hover { background: #e6f3ff; }
-    img { max-width: 100%; max-height: 120px; border-radius: 6px; }
-    .preview { font-size: 12px; color: #888; margin-top: 4px; }
-    </style></head><body>%s</body>
-    <script>
-      function send(index) { window.location.href = "hammerspoon://select?index=" + index; }
-    </script></html>
-    ]]
-
-    local contentHtml = ""
-    for i, item in ipairs(config.clipboardHistory) do
-        local block = ""
-        if item.type == "text" then
-            block = string.format(
-                "<div class='item' onclick='send(%d)'>%s<div class='preview'>%s</div></div>",
-                i - 1,
-                escapeHTML(item.content),
-                item.preview
-            )
-        elseif item.type == "image" then
-            local base64 = hs.image.imageToBase64String(item.content, "PNG")
-            block = string.format(
-                "<div class='item' onclick='send(%d)'><img src='data:image/png;base64,%s'><div class='preview'>%s</div></div>",
-                i - 1,
-                base64,
-                item.preview
-            )
-        end
-        contentHtml = contentHtml .. block
+    -- 根据类型恢复剪贴板内容
+    if item.type == "file" and item.fileURLs then
+        pasteboard.writeObjects(item.fileURLs)
+    elseif item.type == "image" and item.image then
+        pasteboard.writeObjects(item.image)
+    elseif item.type == "styledText" then
+        pasteboard.writeObjects(item.styledText)
+    elseif item.type == "plainText" and item.plainText then
+        pasteboard.setContents(item.text)
     end
 
-    webview:html(string.format(html, contentHtml))
-    webview:show()
+    -- 更新changeCount避免循环触发
+    last_change = pasteboard.changeCount()
 
-    -- 绑定事件响应
-    hs.urlevent.bind("select", function(_, params)
-        local index = tonumber(params.index)
-        local item = config.clipboardHistory[index + 1]
-        if item then
-            if item.type == "text" then
-                hs.pasteboard.setContents(item.content)
-            elseif item.type == "image" then
-                hs.pasteboard.writeImage(item.content)
-            end
-            if config.paste_on_select then
-                hs.eventtap.keyStroke({ "cmd" }, "v")
-            end
-        end
-        webview:hide()
-        hs.urlevent.bind("select", nil) -- 清理绑定
+    -- 重新启动剪贴板监控
+    hs.timer.doAfter(0.5, function()
+        clipboard_timer:start()
     end)
 end
 
--- 快捷键绑定
-hs.hotkey.bind(config.hotkey[1], config.hotkey[2], showClipboardHistory)
+-- 创建选择器UI
+local function createChooser()
+    chooser = hs.chooser.new(function(selection)
+        if not selection then
+            return
+        end
+
+        -- 获取选择的剪贴板内容
+        local selectedItem = clipboard_history[selection.index]
+
+        -- 恢复到剪贴板
+        restoreClipboardItem(selectedItem)
+
+        -- 如果配置为自动粘贴则模拟cmd+v
+        if config.paste_on_select then
+            hs.timer.doAfter(0.01, function()
+                hs.eventtap.keyStroke({ "cmd" }, "v")
+            end)
+        end
+    end)
+
+    chooser:width(22)
+    -- chooser:rows(config.max_display)
+    chooser:searchSubText(true)
+    chooser:placeholderText("搜索剪贴板历史...")
+
+    return chooser
+end
+
+-- 显示选择器UI
+local function showChooser()
+    if not chooser then
+        chooser = createChooser()
+    end
+
+    -- 准备显示项
+    local choices = {}
+    for i, item in ipairs(clipboard_history) do
+        if item.type == "file" then
+            local path = item.fileURLs["filePath"]
+            icon = hs.image.iconForFile(path)
+        elseif item.type == "image" then
+            icon = item.image:size({ w = 1, h = 1 })
+        elseif item.type == "styledText" then
+            icon = hs.image.imageFromAppBundle(item.applicationIDFrom)
+        elseif item.type == "plainText" then
+            icon = hs.image.imageFromAppBundle(item.applicationIDFrom)
+        end
+
+        -- 生成子文本
+        local subText = os.date("%Y-%m-%d %H:%M:%S", item.timestamp)
+        --TODO: complete multi files scheme.
+        -- if item.type == "file" and item.fileURLs then
+        --     if #item.fileURLs == 1 then
+        --         subText = subText .. " | " .. item.fileURLs[1]:gsub("file://", "")
+        --     else
+        --         subText = subText .. " | " .. #item.fileURLs .. " 个文件"
+        --     end
+        -- end
+
+        table.insert(choices, {
+            text = getDisplayText(item),
+            subText = subText,
+            image = icon,
+            index = i,
+        })
+    end
+
+    chooser:choices(choices)
+    chooser:show()
+end
+
+-- 绑定快捷键
+hs.hotkey.bind(config.hotkey[1], config.hotkey[2], showChooser)
+
+-- 开始监控剪贴板
+clipboard_timer:start()
