@@ -9,19 +9,10 @@ local config = {
     excludedApps = { "1Password" }, -- 排除监听这些应用的复制操作
     playSound = true, -- 是否在复制时播放声音
     soundName = "Tink", -- 声音名称: Tink, Bottle, Pop, Purr, Sosumi, Submarine, Basso, Frog, Funk, Glass, Hero
-    savePath = "./clipboard_history.json",
 }
 
 -- 初始化剪贴板历史
-local clipboard_history = (function()
-    local file = io.open(config.savePath, "r")
-    if file then
-        file:close()
-        return hs.json.read(config.savePath)
-    else
-        return {}
-    end
-end)()
+local clipboardHistory = {}
 local lastChange = hs.pasteboard.changeCount()
 local chooser = nil
 local pasteboard = hs.pasteboard
@@ -50,7 +41,7 @@ local function playNotificationSound()
 end
 
 -- 获取剪贴板内容并保存为通用格式
-local function getClipboardItem()
+local function saveClipboardContent()
     local item = {
         plainText = pasteboard.getContents(),
         styledText = pasteboard.readStyledText(),
@@ -140,7 +131,7 @@ local clipboardTimer = hs.timer.new(config.clipboardCheckInterval, function()
             return
         end
         -- 保存剪贴板内容
-        local item = getClipboardItem()
+        local item = saveClipboardContent()
         item.applicationIDFrom = hs.application.frontmostApplication():bundleID()
 
         -- 只有当有内容时才继续
@@ -152,8 +143,6 @@ local clipboardTimer = hs.timer.new(config.clipboardCheckInterval, function()
                     break
                 end
             end
-            -- 播放提示音，先播放声音再进行操作，这样可以缩短延迟，提升用户体验
-            playNotificationSound()
 
             -- 添加到历史开头
             table.insert(clipboardHistory, 1, item)
@@ -163,25 +152,13 @@ local clipboardTimer = hs.timer.new(config.clipboardCheckInterval, function()
                 table.remove(clipboardHistory)
             end
 
-            -- TODD:
-            -- 目前无法将富文本保存到json，暂时先忽略一下这个问题，后面再解决
-            -- 由于读取文件只发生在初始化的时候，初始化之后复制的内容会保存在内存中，
-            -- 因此富文本格式只会在关闭后重新打开Hammerspoon才会丢失
-            -- 由于这里是浅拷贝，直接赋值会改变cliboard_history的值，所以这里暂时注释掉，后面再解决
-            -- local savedHistory = clipboard_history
-            -- for _, saveditem in ipairs(savedHistory) do
-            --     if saveditem.styledText then
-            --         saveditem.styledText = saveditem.plainText
-            --     end
-            -- end
-            print(hs.inspect(clipboard_history))
-            -- print(hs.inspect(savedHistory))
-            -- hs.json.write(savedHistory, config.savePath, true, true)
+            -- 播放提示音
+            playNotificationSound()
         end
     end
 end)
 -- 还原剪贴板项目
-local function setItemTo(item)
+local function restoreClipboardItem(item)
     -- 暂时禁用剪贴板监控，避免循环
     clipboardTimer:stop()
 
@@ -191,9 +168,7 @@ local function setItemTo(item)
     elseif item.type == "image" and item.image then
         pasteboard.writeObjects(item.image)
     elseif item.type == "styledText" then
-        print(hs.inspect(item.styledText))
         pasteboard.writeObjects(item.styledText)
-        print("styled text write into pasteboard")
     elseif item.type == "plainText" and item.plainText then
         pasteboard.setContents(item.text)
     end
@@ -218,14 +193,13 @@ local function createChooser()
         local selectedItem = clipboardHistory[selection.index]
 
         -- 恢复到剪贴板
-        setItemTo(selectedItem)
+        restoreClipboardItem(selectedItem)
 
         -- 如果配置为自动粘贴则模拟cmd+v
-        if config.paste_on_select then
-            hs.eventtap.keyStroke({ "cmd" }, "v")
-            -- hs.timer.doAfter(0.01, function()
-            --     hs.eventtap.keyStroke({ "cmd" }, "v")
-            -- end)
+        if config.pasteOnSelect then
+            hs.timer.doAfter(0.01, function()
+                hs.eventtap.keyStroke({ "cmd" }, "v")
+            end)
         end
     end)
 
