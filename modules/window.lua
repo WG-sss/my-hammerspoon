@@ -593,10 +593,10 @@ hs.hotkey.bind(windows.center.prefix, windows.center.key, windows.center.message
     win:setFrame(f)
 
     --如果应用窗口有最小限制,则根据最小窗口居中
-    if win:frame().w > size then 
-        f.x = (max.w-win:frame().w)/2
-        f.y = (max.h -win:frame().h)/2 
-        f.w = win:frame().w  
+    if win:frame().w > size then
+        f.x = (max.w - win:frame().w) / 2
+        f.y = (max.h - win:frame().h) / 2
+        f.w = win:frame().w
         f.h = win:frame().h
         win:setFrame(f)
     end
@@ -649,6 +649,12 @@ end)
 hs.hotkey.bind(windows.min.prefix, windows.min.key, windows.min.message, function()
     local win = hs.window.focusedWindow()
     win:minimize()
+end)
+
+-- close this function is close a window, whether the app whether will quit depends on the app's setting.
+hs.hotkey.bind(windows.close.prefix, windows.close.key, windows.close.message, function()
+    local win = hs.window.focusedWindow()
+    win:close()
 end)
 
 -- 将窗口移动到上方屏幕
