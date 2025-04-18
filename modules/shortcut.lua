@@ -88,7 +88,7 @@ windows = {
     -- 最小化
     min = { prefix = { "Ctrl", "Option" }, key = "Z", message = "Min Window" },
     -- 退出
-    quit = { prefix = { "Ctrl", "Option" }, key = "Q", message = "Close Window" },
+    close = { prefix = { "Ctrl", "Option" }, key = "Q", message = "Close Window" },
     -- 将窗口移动到上方屏幕
     to_up = { prefix = { "Ctrl", "Option", "Command" }, key = "Up", message = "Move To Up Screen" },
     -- 将窗口移动到下方屏幕
@@ -112,7 +112,6 @@ applications = {
     { prefix = { "Option" }, key = "Z", message = "Zotero", bundleId = "org.zotero.zotero" },
     { prefix = { "Option" }, key = "K", message = "Anki", bundleId = "net.ankiweb.dtop" },
     { prefix = { "Option" }, key = "D", message = "DiDa", bundleId = "com.TickTick.task.mac" },
-    { prefix = { "Option" }, key = "R", message = "Reminder", bundleId = "com.apple.Reminder" },
     { prefix = { "Option" }, key = "D", message = "DiDa", bundleId = "com.TickTick.task.mac" },
     { prefix = { "Option" }, key = "E", message = "Excel", bundleId = "com.microsoft.excel" },
 
@@ -123,6 +122,7 @@ applications = {
     -- {prefix = {"Option"}, key = "K", message="Keynote", bundleId="com.apple.iWork.Keynote"},
     -- {prefix = {"Option"}, key = "R", message="Reminder", bundleId="com.apple.Reminder"},
     -- {prefix = {"Option"}, key = "C", message="Chrome", bundleId="com.google.Chrome"},
+    { prefix = { "Option" }, key = "R", message = "Reminder", bundleId = "com.apple.Reminder" },
     { prefix = { "Option" }, key = "C", message = "Chrome", bundleId = "com.google.Chrome" },
 
     -- don't use at present
